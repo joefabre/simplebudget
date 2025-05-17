@@ -1,0 +1,116 @@
+{
+  "images" : [
+    {
+      "size" : "20.0x20.0",
+      "scale" : "2x",
+      "idiom" : "iphone",
+      "filename" : "icon-notification-20@2x.png"
+    },
+    {
+      "scale" : "3x",
+      "size" : "20.0x20.0",
+      "filename" : "icon-notification-20@3x.png",
+      "idiom" : "iphone"
+    },
+    {
+      "filename" : "icon-settings-29@2x.png",
+      "idiom" : "iphone",
+      "scale" : "2x",
+      "size" : "29.0x29.0"
+    },
+    {
+      "idiom" : "iphone",
+      "size" : "29.0x29.0",
+      "scale" : "3x",
+      "filename" : "icon-settings-29@3x.png"
+    },
+    {
+      "size" : "40.0x40.0",
+      "idiom" : "iphone",
+      "filename" : "icon-spotlight-40@2x.png",
+      "scale" : "2x"
+    },
+    {
+      "size" : "40.0x40.0",
+      "scale" : "3x",
+      "idiom" : "iphone",
+      "filename" : "icon-spotlight-40@3x.png"
+    },
+    {
+      "idiom" : "iphone",
+      "scale" : "2x",
+      "filename" : "icon-app-60@2x.png",
+      "size" : "60.0x60.0"
+    },
+    {
+      "scale" : "3x",
+      "idiom" : "iphone",
+      "size" : "60.0x60.0",
+      "filename" : "icon-app-60@3x.png"
+    },
+    {
+      "idiom" : "ipad",
+      "scale" : "1x",
+      "size" : "20.0x20.0",
+      "filename" : "icon-notification-20.png"
+    },
+    {
+      "filename" : "icon-notification-20@2x.png",
+      "scale" : "2x",
+      "idiom" : "ipad",
+      "size" : "20.0x20.0"
+    },
+    {
+      "scale" : "1x",
+      "filename" : "icon-settings-29.png",
+      "idiom" : "ipad",
+      "size" : "29.0x29.0"
+    },
+    {
+      "scale" : "2x",
+      "size" : "29.0x29.0",
+      "idiom" : "ipad",
+      "filename" : "icon-settings-29@2x.png"
+    },
+    {
+      "size" : "40.0x40.0",
+      "scale" : "1x",
+      "filename" : "icon-spotlight-40.png",
+      "idiom" : "ipad"
+    },
+    {
+      "filename" : "icon-spotlight-40@2x.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "40.0x40.0"
+    },
+    {
+      "scale" : "1x",
+      "size" : "76.0x76.0",
+      "filename" : "icon-app-76.png",
+      "idiom" : "ipad"
+    },
+    {
+      "size" : "76.0x76.0",
+      "filename" : "icon-app-76@2x.png",
+      "idiom" : "ipad",
+      "scale" : "2x"
+    },
+    {
+      "filename" : "icon-app-83.5@2x.png",
+      "size" : "83.5x83.5",
+      "idiom" : "ipad",
+      "scale" : "2x"
+    },
+    {
+      "filename" : "icon-appstore-1024.png",
+      "idiom" : "ios-marketing",
+      "scale" : "1x",
+      "size" : "1024.0x1024.0"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
