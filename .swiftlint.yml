@@ -1,0 +1,39 @@
+disabled_rules:
+  - trailing_whitespace
+  - function_body_length
+  - type_body_length
+  - file_length
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - force_unwrapping
+  - private_outlet
+  - private_action
+
+line_length:
+  warning: 150
+  error: 200
+
+identifier_name:
+  min_length:
+    warning: 2
+  excluded:
+    - id
+    - x
+    - y
+
+included:
+  - SimpleBudget
+excluded:
+  - Pods
+  - DerivedData
+  - SimpleBudgetTests
+  - SimpleBudgetUITests
+
+custom_rules:
+  no_direct_print:
+    name: "No direct print"
+    regex: "\\bprint\\("
+    message: "Use logging framework instead of print"
+    severity: warning
