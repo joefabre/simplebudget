@@ -1,0 +1,43 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # Increment build number
+    increment_build_number(
+      xcodeproj: "SimpleBudget/SimpleBudget.xcodeproj"
+    )
+    
+    # Build the app
+    build_app(
+      scheme: "SimpleBudget",
+      export_method: "app-store",
+      configuration: "Release",
+      clean: true,
+      output_directory: "build",
+      output_name: "SimpleBudget.ipa",
+      export_options: {
+        provisioningProfiles: {
+          ENV["BUNDLE_ID"] => "SimpleBudget_AppStore"
+        }
+      }
+    )
+    
+    # Upload to TestFlight
+    upload_to_testflight(
+      api_key: app_store_connect_api_key,
+      skip_waiting_for_build_processing: true
+    )
+    
+    # Commit version bump
+    commit_version_bump(
+      message: "Version Bump [ci skip]",
+      xcodeproj: "SimpleBudget/SimpleBudget.xcodeproj"
+    )
+  end
+  
+  desc "Create app store connect API key hash"
+  lane :api_key do
+    api_key = app_store_connect_api_key
+  end
+end

@@ -1,0 +1,60 @@
+name: Project Board Automation
+
+on:
+  issues:
+    types: [opened, reopened, closed]
+  pull_request:
+    types: [opened, reopened, closed, ready_for_review]
+
+jobs:
+  project_automation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const event = context.payload;
+            
+            // Function to get column ID
+            async function getColumnId(columnName) {
+              const response = await github.rest.projects.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open'
+              });
+              const project = response.data[0];
+              const columns = await github.rest.projects.listColumns({
+                project_id: project.id
+              });
+              return columns.data.find(c => c.name === columnName)?.id;
+            }
+            
+            // Handle different event types
+            if (event.issue) {
+              const columnId = await getColumnId('📋 Backlog');
+              if (columnId) {
+                await github.rest.projects.createCard({
+                  column_id: columnId,
+                  content_id: event.issue.id,
+                  content_type: 'Issue'
+                });
+              }
+            }
+            
+            if (event.pull_request) {
+              let columnName = '💻 In Progress';
+              if (event.action === 'ready_for_review') {
+                columnName = '👀 In Review';
+              } else if (event.action === 'closed' && event.pull_request.merged) {
+                columnName = '✅ Done';
+              }
+              
+              const columnId = await getColumnId(columnName);
+              if (columnId) {
+                await github.rest.projects.createCard({
+                  column_id: columnId,
+                  content_id: event.pull_request.id,
+                  content_type: 'PullRequest'
+                });
+              }
+            }

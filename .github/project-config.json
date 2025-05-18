@@ -1,0 +1,25 @@
+{
+  "name": "SimpleBudget Development",
+  "columns": [
+    {
+      "name": "📋 Backlog",
+      "description": "Items that need to be worked on"
+    },
+    {
+      "name": "🎯 Sprint Planning",
+      "description": "Items planned for current sprint"
+    },
+    {
+      "name": "💻 In Progress",
+      "description": "Currently being worked on"
+    },
+    {
+      "name": "👀 In Review",
+      "description": "Ready for review/being reviewed"
+    },
+    {
+      "name": "✅ Done",
+      "description": "Completed items"
+    }
+  ]
+}
