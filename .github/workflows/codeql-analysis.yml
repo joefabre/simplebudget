@@ -1,0 +1,53 @@
+name: "CodeQL Analysis"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '30 1 * * 0'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'swift' ]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+# Add discussion categories config
+cat > .github/DISCUSSION_TEMPLATE/config.yml << 'EOL'
+blank_issues_enabled: false
+contact_links:
+  - name: 🤔 Questions & Help
+    about: Get help from the community
+    
+  - name: 💡 Ideas
+    about: Share ideas for new features
+    
+  - name: 📣 Announcements
+    about: Official announcements
+    
+  - name: 🎉 Show and Tell
+    about: Share what you've built
+    
+  - name: 💬 General Discussion
+    about: General discussion about the project

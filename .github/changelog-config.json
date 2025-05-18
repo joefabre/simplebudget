@@ -1,0 +1,30 @@
+{
+  "categories": [
+    {
+      "title": "## 🚀 Features",
+      "labels": ["enhancement", "feature"]
+    },
+    {
+      "title": "## 🐛 Bug Fixes",
+      "labels": ["bug", "bugfix"]
+    },
+    {
+      "title": "## 📝 Documentation",
+      "labels": ["documentation"]
+    },
+    {
+      "title": "## ⚡️ Performance",
+      "labels": ["performance"]
+    },
+    {
+      "title": "## 🧰 Maintenance",
+      "labels": ["maintenance", "dependencies"]
+    },
+    {
+      "title": "## 🔒 Security",
+      "labels": ["security"]
+    }
+  ],
+  "template": "## What's Changed\n\n${{CHANGELOG}}\n\n**Full Changelog**: ${{RELEASE_DIFF}}\n",
+  "pr_template": "- ${{TITLE}} by @${{AUTHOR}} in #${{NUMBER}}"
+}
