@@ -1,0 +1,65 @@
+name: Pull Request Automation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  automation:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Label PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const title = context.payload.pull_request.title.toLowerCase();
+            let labels = [];
+            
+            if (title.includes('fix:') || title.includes('bug')) {
+              labels.push('bug');
+            }
+            if (title.includes('feat:')) {
+              labels.push('enhancement');
+            }
+            if (title.includes('docs:')) {
+              labels.push('documentation');
+            }
+            if (title.includes('chore:')) {
+              labels.push('maintenance');
+            }
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: labels
+              });
+            }
+            
+      - name: Size Label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const diff_url = context.payload.pull_request.diff_url;
+            const response = await fetch(diff_url);
+            const diff = await response.text();
+            const changes = diff.split('\n').length;
+            
+            let size_label = '';
+            if (changes < 10) size_label = 'size/XS';
+            else if (changes < 30) size_label = 'size/S';
+            else if (changes < 100) size_label = 'size/M';
+            else if (changes < 500) size_label = 'size/L';
+            else size_label = 'size/XL';
+            
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [size_label]
+            });
