@@ -5,7 +5,34 @@ public struct AddBudgetView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     
-    public init() {}
+    // Store the budget being edited, if any
+    private let existingBudget: Budget?
+    
+    // Default initializer for creating a new budget
+    public init() {
+        self.existingBudget = nil
+    }
+    
+    // Initializer for editing an existing budget
+    public init(budget: Budget) {
+        self.existingBudget = budget
+        _amount = State(initialValue: String(format: "%.2f", budget.amount))
+        _month = State(initialValue: AddBudgetView.dateFromBudget(budget))
+        _notes = State(initialValue: budget.notes ?? "")
+        _incomeSources = State(initialValue: budget.incomeSources)
+    }
+    
+    // Helper function to convert budget month/year to Date
+    private static func dateFromBudget(_ budget: Budget) -> Date {
+        let calendar = Calendar.current
+        let monthInt = Int(budget.month ?? "01") ?? 1
+        let yearInt = Int(budget.year)
+        if let date = calendar.date(from: DateComponents(year: yearInt, month: monthInt, day: 1)) {
+            return date
+        } else {
+            return Date()
+        }
+    }
     
     @State private var amount: String = ""
     @State private var month: Date = Date()
@@ -120,7 +147,7 @@ public struct AddBudgetView: View {
                     Text("Notes")
                 }
             }
-            .navigationTitle("Set Monthly Budget")
+            .navigationTitle(existingBudget != nil ? "Edit Budget" : "Set Monthly Budget")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -135,7 +162,7 @@ public struct AddBudgetView: View {
                             saveBudget()
                         }
                     }
-                    .disabled(amount.isEmpty || Double(amount) == 0)
+                    .disabled(amount.isEmpty)
                 }
             }
             .onAppear {
@@ -272,6 +299,20 @@ public struct AddBudgetView: View {
             for source in incomeSources {
                 updatedNotes += "\n- \(source.name): $\(String(format: "%.2f", source.amount)) (\(source.frequency.rawValue))"
             }
+        }
+        
+        // If we're editing an existing budget, update it directly
+        if let budgetToEdit = existingBudget {
+            // Update the budget being edited
+            budgetToEdit.amount = amountValue
+            budgetToEdit.month = String(format: "%02d", month)
+            budgetToEdit.year = Int16(year)
+            budgetToEdit.notes = updatedNotes
+            budgetToEdit.incomeSources = incomeSources
+            
+            try? viewContext.save()
+            dismiss()
+            return
         }
         
         // Check if budget already exists for this month

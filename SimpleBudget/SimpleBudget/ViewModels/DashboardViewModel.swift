@@ -17,6 +17,31 @@ class DashboardViewModel: ObservableObject {
     @Published var totalMonthlyIncome: Double = 0
     @Published var incomeSourceCount: Int = 0
     @Published var remainingBudget: Double = 0
+    @Published var totalDebt: Double = 0
+    @Published var debtAccounts: [Account] = []
+    
+    // Computed percentage properties with proper zero handling
+    var incomeUsagePercentage: Int {
+        guard totalMonthlyIncome > 0 else { return 0 }
+        let percentage = (totalSpent / totalMonthlyIncome) * 100
+        // Ensure we have a valid percentage and constrain it to 0-100 range
+        if percentage.isFinite {
+            return Int(min(max(percentage, 0), 100))
+        } else {
+            return 0
+        }
+    }
+    
+    var budgetUsagePercentage: Int {
+        guard let budget = currentBudget, budget.amount > 0 else { return 0 }
+        let percentage = (totalSpent / budget.amount) * 100
+        // Ensure we have a valid percentage and constrain it to 0-100 range
+        if percentage.isFinite {
+            return Int(min(max(percentage, 0), 100))
+        } else {
+            return 0
+        }
+    }
     
     // Formatters
     private let currencyFormatter: NumberFormatter = {
@@ -52,6 +77,51 @@ class DashboardViewModel: ObservableObject {
         
         // Calculate income-related metrics
         calculateIncomeMetrics()
+        
+        // Calculate debt metrics
+        calculateDebtMetrics(context: viewContext)
+    }
+    
+    // Calculate total debt from all debt accounts
+    private func calculateDebtMetrics(context: NSManagedObjectContext) {
+        let fetchRequest: NSFetchRequest<Account> = Account.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "isDebt == YES")
+        
+        do {
+            debtAccounts = try context.fetch(fetchRequest)
+            totalDebt = debtAccounts.reduce(0) { $0 + $1.balance }
+        } catch {
+            print("Error fetching debt accounts: \(error)")
+            debtAccounts = []
+            totalDebt = 0
+        }
+    }
+    
+    // Get count of each debt type
+    var debtTypeBreakdown: [(type: String, amount: Double)] {
+        var breakdown: [String: Double] = [:]
+        
+        for account in debtAccounts {
+            guard let type = account.type else { continue }
+            
+            // Map internal types to display names
+            let displayType: String
+            switch type.lowercased() {
+            case "creditcard":
+                displayType = "Credit Cards"
+            case "loan":
+                displayType = "Loans"
+            case "mortgage":
+                displayType = "Mortgage"
+            default:
+                displayType = "Other Debt"
+            }
+            
+            breakdown[displayType, default: 0] += account.balance
+        }
+        
+        return breakdown.map { ($0.key, $0.value) }
+            .sorted { $0.1 > $1.1 }
     }
     
     // Format currency values
@@ -61,6 +131,8 @@ class DashboardViewModel: ObservableObject {
     
     // Calculate color for progress bars
     func progressColor(spent: Double, budget: Double) -> Color {
+        guard budget > 0 else { return .green } // Default to green if budget is zero
+        
         let percentage = spent / budget
         if percentage >= 1.0 {
             return .red

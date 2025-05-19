@@ -51,8 +51,13 @@ struct BudgetSummaryView: View {
                     .environment(\.managedObjectContext, viewContext)
             }
             .sheet(isPresented: $isSettingBudget) {
-                AddBudgetView()
-                    .environment(\.managedObjectContext, viewContext)
+                if let budget = viewModel.currentBudget {
+                    AddBudgetView(budget: budget)
+                        .environment(\.managedObjectContext, viewContext)
+                } else {
+                    AddBudgetView()
+                        .environment(\.managedObjectContext, viewContext)
+                }
             }
             .onAppear {
                 viewModel.loadData(context: viewContext)
@@ -156,7 +161,7 @@ struct BudgetSummaryView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Spacer()
-                            Text("\(Int(min((viewModel.totalSpent / viewModel.totalMonthlyIncome) * 100, 100)))%")
+                            Text("\(viewModel.incomeUsagePercentage)%")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }

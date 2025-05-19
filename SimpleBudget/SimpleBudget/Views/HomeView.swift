@@ -1,10 +1,13 @@
 import SwiftUI
+import CoreData
 
 struct HomeView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @Environment(\.managedObjectContext) private var viewContext
+    @State private var previousMonthNetWorth: Double = 0.0
+    @State private var hasSufficientDataTimespan: Bool = false
     @State private var showingAddTransaction = false
-    @State private var showingSetBudget = false
+    @State private var isSettingBudget = false
     @State private var showingMainApp = false
     @AppStorage("selectedTab") private var selectedTab = 0
     @State private var showingAccountsView = false
@@ -72,9 +75,20 @@ struct HomeView: View {
                 AddTransactionView()
                     .environment(\.managedObjectContext, viewContext)
             }
-            .sheet(isPresented: $showingSetBudget) {
-                AddBudgetView()
-                    .environment(\.managedObjectContext, viewContext)
+            .sheet(isPresented: $isSettingBudget) {
+                if let budget = viewModel.currentBudget {
+                    AddBudgetView(budget: budget)
+                        .environment(\.managedObjectContext, viewContext)
+                } else {
+                    AddBudgetView()
+                        .environment(\.managedObjectContext, viewContext)
+                }
+            }
+            .onChange(of: isSettingBudget) { isShowing in
+                if !isShowing {
+                    // Refresh data when sheet is dismissed
+                    viewModel.loadData(context: viewContext)
+                }
             }
             .sheet(isPresented: $showingAccountsView) {
                 AccountsView()
@@ -86,6 +100,7 @@ struct HomeView: View {
             }
             .onAppear {
                 viewModel.loadData(context: viewContext)
+                loadPreviousMonthNetWorth()
             }
             .refreshable {
                 viewModel.loadData(context: viewContext)
@@ -181,19 +196,19 @@ struct HomeView: View {
                 
                 Spacer()
                 
-                if !accounts.isEmpty {
+                if hasValidHistoricalData && netWorthChangePercentage != 0 {
                     HStack(spacing: 2) {
-                        Image(systemName: "arrow.up")
+                        Image(systemName: netWorthChangePercentage >= 0 ? "arrow.up" : "arrow.down")
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundColor(netWorthChangePercentage >= 0 ? .green : .red)
                         
-                        Text("8.5%")
+                        Text("\(abs(netWorthChangePercentage))%")
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundColor(netWorthChangePercentage >= 0 ? .green : .red)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.green.opacity(0.1))
+                    .background((netWorthChangePercentage >= 0 ? Color.green : Color.red).opacity(0.1))
                     .cornerRadius(12)
                 }
             }
@@ -216,7 +231,7 @@ struct HomeView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Text(formatCurrencyWithPrivacy(0))
+                        Text(formatCurrencyWithPrivacy(viewModel.totalDebt))
                             .font(.callout)
                             .fontWeight(.semibold)
                             .foregroundColor(.red)
@@ -239,7 +254,7 @@ struct HomeView: View {
                         Spacer()
                         
                         Button {
-                            showingSetBudget = true
+                            isSettingBudget = true
                         } label: {
                             Text("Edit")
                                 .font(.subheadline)
@@ -293,7 +308,7 @@ struct HomeView: View {
                         .foregroundColor(.secondary)
                     
                 Button {
-                    showingSetBudget = true
+                    isSettingBudget = true
                 } label: {
                     Text("Set Budget")
                         .font(.headline)
@@ -511,7 +526,7 @@ struct HomeView: View {
                     icon: "dollarsign.circle.fill",
                     color: .green
                 ) {
-                    showingSetBudget = true
+                    isSettingBudget = true
                 }
                 
                 Button {
@@ -614,17 +629,138 @@ struct HomeView: View {
     
     private var totalNetWorth: Double {
         // Net worth is total assets minus debts
-        // For now we just use account balances since we don't track debts separately
-        return totalAssets
+        let assets = totalAssets
+        let debts = viewModel.totalDebt
+        return assets - debts
+    }
+    
+    // Calculate the net worth change percentage
+    private var netWorthChangePercentage: Int {
+        // Only calculate if we have valid previous data and at least $10 of net worth for meaningful comparison
+        guard previousMonthNetWorth >= 10 && totalNetWorth > 0 else { return 0 }
+        
+        let change = totalNetWorth - previousMonthNetWorth
+        let percentage = (change / previousMonthNetWorth) * 100
+        
+        return Int(percentage)
+    }
+    
+    // Check if we have enough historical data to show a percentage
+    private var hasValidHistoricalData: Bool {
+        return previousMonthNetWorth >= 10 && hasSufficientDataTimespan
+    }
+    
+    // Load the previous month's net worth data
+    private func loadPreviousMonthNetWorth() {
+        let context = viewContext
+        let calendar = Calendar.current
+        
+        // Get the first day of previous month
+        guard let currentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: Date())),
+              let prevMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth) else {
+            return
+        }
+        
+        // Get last day of previous month
+        let prevMonthRange = calendar.range(of: .day, in: .month, for: prevMonth)
+        let lastDayOfPrevMonth = prevMonthRange?.count ?? 28
+        
+        guard let endOfPrevMonth = calendar.date(from: DateComponents(
+            year: calendar.component(.year, from: prevMonth),
+            month: calendar.component(.month, from: prevMonth),
+            day: lastDayOfPrevMonth,
+            hour: 23,
+            minute: 59,
+            second: 59
+        )) else { return }
+        
+        // Fetch accounts as they were at the end of the previous month
+        // This is a simplified version - in a real app, you would track account balances over time
+        
+        // For now, estimate previous month net worth based on transactions in that month
+        let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "date <= %@", endOfPrevMonth as NSDate)
+        
+        do {
+            let transactions = try context.fetch(fetchRequest)
+            
+            // Reset duration check flag
+            hasSufficientDataTimespan = false
+            
+            // Only calculate if we have enough transaction history (minimum 3 transactions)
+            if transactions.count < 3 {
+                previousMonthNetWorth = 0 // Not enough historical data
+                return
+            }
+            
+            // Check if transactions span at least 30 days
+            if let oldestTransaction = transactions.min(by: { 
+                ($0.date ?? Date()) < ($1.date ?? Date()) 
+            }), let oldestDate = oldestTransaction.date {
+                let daysSinceOldest = Calendar.current.dateComponents([.day], from: oldestDate, to: Date()).day ?? 0
+                hasSufficientDataTimespan = daysSinceOldest >= 30
+                
+                if !hasSufficientDataTimespan {
+                    previousMonthNetWorth = 0 // Not enough time span
+                    return
+                }
+            } else {
+                previousMonthNetWorth = 0 // Couldn't determine time span
+                return
+            }
+            
+            // Calculate net change from transactions
+            let netChange = transactions.reduce(0.0) { result, transaction in
+                if transaction.type == "expense" {
+                    return result - transaction.amount
+                } else if transaction.type == "income" {
+                    return result + transaction.amount
+                }
+                return result
+            }
+            
+            // Verify there's significant financial activity (at least $10 in total transaction volume)
+            let totalActivity = transactions.reduce(0.0) { result, transaction in
+                return result + transaction.amount
+            }
+            
+            if totalActivity < 10 {
+                previousMonthNetWorth = 0 // Not enough meaningful activity
+                return
+            }
+            
+            // Estimate previous month's net worth as current minus changes since then
+            // This is an approximation - a real implementation would store historical balances
+            previousMonthNetWorth = max(totalNetWorth - netChange, 0.01) // Avoid division by zero
+            
+        } catch {
+            print("Error fetching previous transactions: \(error)")
+            previousMonthNetWorth = 0 // Default to no historical data
+            hasSufficientDataTimespan = false
+        }
     }
     
     private var totalAssets: Double {
-        // Sum of all positive account balances
-        accounts.reduce(0) { $0 + max($1.balance, 0) }
+        // Sum of all non-debt account balances
+        accounts.reduce(0) { sum, account in
+            // Only include non-debt accounts as assets
+            if !account.isDebt {
+                return sum + max(account.balance, 0)
+            } else {
+                return sum
+            }
+        }
     }
     
     private var totalAccountsBalance: Double {
-        accounts.reduce(0) { $0 + $1.balance }
+        // Total balance considering debts as negative
+        accounts.reduce(0) { sum, account in
+            if account.isDebt {
+                return sum - account.balance // Subtract debt balances
+            } else {
+                return sum + account.balance // Add asset balances
+            }
+        }
     }
     
     private var formattedDate: String {

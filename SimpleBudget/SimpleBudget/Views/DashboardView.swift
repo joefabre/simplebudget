@@ -18,6 +18,7 @@ public struct DashboardView: View {
                 VStack(spacing: 24) {  // Increased spacing between cards
                     budgetSummaryCard
                     spendingChartsSection
+                    debtSummarySection
                     categoryBreakdownSection
                     recentTransactionsSection
                 }
@@ -146,12 +147,16 @@ public struct DashboardView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Spacer()
-                            Text("\(Int(min((viewModel.totalSpent / viewModel.totalMonthlyIncome) * 100, 100)))%")
+                            Text("\(viewModel.incomeUsagePercentage)%")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                         
-                        ProgressView(value: min(viewModel.totalSpent / viewModel.totalMonthlyIncome, 1.0))
+                        ProgressView(value: {
+                            guard viewModel.totalMonthlyIncome > 0 else { return 0.0 }
+                            let value = viewModel.totalSpent / viewModel.totalMonthlyIncome
+                            return value.isFinite ? min(value, 1.0) : 0.0
+                        }())
                             .tint(viewModel.progressColor(spent: viewModel.totalSpent, budget: viewModel.totalMonthlyIncome))
                         
                         if viewModel.totalMonthlyIncome > 0 && budget.amount > 0 {
@@ -161,7 +166,7 @@ public struct DashboardView: View {
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
-                                Text("\(Int(min((budget.amount / viewModel.totalMonthlyIncome) * 100, 100)))%")
+                            Text("\(viewModel.budgetUsagePercentage)%")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -174,7 +179,11 @@ public struct DashboardView: View {
                                     .cornerRadius(4)
                                 
                                 Rectangle()
-                                    .frame(width: min((budget.amount / viewModel.totalMonthlyIncome) * UIScreen.main.bounds.width * 0.8, UIScreen.main.bounds.width * 0.8), height: 8)
+                                    .frame(width: {
+                                        guard viewModel.totalMonthlyIncome > 0 && budget.amount > 0 else { return 0.0 }
+                                        let value = (budget.amount / viewModel.totalMonthlyIncome) * UIScreen.main.bounds.width * 0.8
+                                        return value.isFinite ? min(value, UIScreen.main.bounds.width * 0.8) : 0.0
+                                    }(), height: 8)
                                     .foregroundColor(.blue)
                                     .cornerRadius(4)
                             }
@@ -208,12 +217,16 @@ public struct DashboardView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Spacer()
-                            Text("\(Int(min((viewModel.totalSpent / budget.amount) * 100, 100)))%")
+                            Text("\(viewModel.budgetUsagePercentage)%")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                         
-                        ProgressView(value: min(viewModel.totalSpent / budget.amount, 1.0))
+                        ProgressView(value: {
+                            guard budget.amount > 0 else { return 0.0 }
+                            let value = viewModel.totalSpent / budget.amount
+                            return value.isFinite ? min(value, 1.0) : 0.0
+                        }())
                             .tint(viewModel.progressColor(spent: viewModel.totalSpent, budget: budget.amount))
                     }
                 }
@@ -363,6 +376,69 @@ public struct DashboardView: View {
         }
         .padding()
         .background(Color(UIColor.systemBackground))  // Lighter background for better contrast
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 2)
+    }
+    
+    private var debtSummarySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Debt Overview")
+                .font(.headline)
+                .padding(.bottom, 4)
+            
+            if viewModel.totalDebt > 0 {
+                // Total debt amount
+                HStack {
+                    Text("Total Debt:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text(viewModel.formatCurrency(viewModel.totalDebt))
+                        .font(.headline)
+                        .foregroundColor(.red)
+                }
+                .padding(.vertical, 4)
+                
+                Divider()
+                    .padding(.vertical, 4)
+                
+                // Debt breakdown by type
+                ForEach(viewModel.debtTypeBreakdown, id: \.type) { debtType in
+                    HStack {
+                        Text(debtType.type)
+                            .font(.subheadline)
+                        
+                        Spacer()
+                        
+                        Text(viewModel.formatCurrency(debtType.amount))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
+                
+                if viewModel.debtAccounts.count > 0 {
+                    NavigationLink {
+                        AccountsView()
+                            .environment(\.managedObjectContext, viewContext)
+                    } label: {
+                        Text("View all \(viewModel.debtAccounts.count) debt accounts")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 8)
+                    }
+                }
+            } else {
+                Text("No debt accounts found")
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 20)
+            }
+        }
+        .padding()
+        .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 2)
     }
