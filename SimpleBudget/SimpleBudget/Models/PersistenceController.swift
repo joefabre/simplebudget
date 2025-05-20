@@ -85,6 +85,51 @@ struct PersistenceController {
         income.type = "income"
         income.notes = "Monthly salary"
         
+        // Create sample savings goals
+        let savings = Account(context: viewContext)
+        savings.id = UUID()
+        savings.name = "My Savings"
+        savings.type = "savings"
+        savings.balance = 15000.0
+        savings.icon = "banknote.fill"
+        
+        let investment = Account(context: viewContext)
+        investment.id = UUID()
+        investment.name = "My Investments"
+        investment.type = "investment"
+        investment.balance = 10000.0
+        investment.icon = "chart.line.uptrend.xyaxis"
+        
+        // Create sample goals
+        let goal1 = SavingsGoal(context: viewContext)
+        goal1.id = UUID()
+        goal1.name = "New Car"
+        goal1.targetAmount = 25000
+        goal1.currentAmount = 15000
+        goal1.createdAt = Date()
+        goal1.deadline = calendar.date(byAdding: .month, value: 6, to: Date())
+        goal1.notes = "Saving for a new electric vehicle"
+        goal1.account = savings
+        
+        let goal2 = SavingsGoal(context: viewContext)
+        goal2.id = UUID()
+        goal2.name = "Emergency Fund"
+        goal2.targetAmount = 10000
+        goal2.currentAmount = 10000
+        goal2.createdAt = calendar.date(byAdding: .month, value: -2, to: Date())
+        goal2.notes = "6 months of expenses"
+        goal2.account = savings
+        
+        let goal3 = SavingsGoal(context: viewContext)
+        goal3.id = UUID()
+        goal3.name = "Investment Portfolio"
+        goal3.targetAmount = 50000
+        goal3.currentAmount = 10000
+        goal3.createdAt = calendar.date(byAdding: .month, value: -1, to: Date())
+        goal3.deadline = calendar.date(byAdding: .year, value: 2, to: Date())
+        goal3.notes = "Long-term investment goal"
+        goal3.account = investment
+        
         // Create transactions for previous month
         let prevMonthStart = calendar.date(from: DateComponents(year: prevYear, month: prevMonth, day: 1))!
         
@@ -188,6 +233,7 @@ struct PersistenceController {
         // Delete all entities
         deleteAllRecords(of: "Transaction")
         deleteAllRecords(of: "Budget")
+        deleteAllRecords(of: "SavingsGoal")
         deleteAllRecords(of: "Account")
         
         // Reset all relevant UserDefaults

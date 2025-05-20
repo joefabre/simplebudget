@@ -3,14 +3,11 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("selectedTab") private var selectedTab = 0
-    
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Background color - make it darker
-            Color(UIColor.systemGray5)  // Darker than systemGray6
+            Color(UIColor.systemGray5)
                 .ignoresSafeArea()
-            
-            // Main content based on selected tab
             Group {
                 switch selectedTab {
                 case 0:
@@ -27,13 +24,11 @@ struct ContentView: View {
                         .environment(\.managedObjectContext, viewContext)
                 }
             }
-            .padding(.bottom, FooterView.height)  // Space for footer using standard height
-            
-            // Custom footer with slightly different background
+            .padding(.bottom, FooterView.height)
             FooterView(selectedTab: $selectedTab)
                 .background(Color(UIColor.systemBackground).shadow(radius: 1))
         }
-        .edgesIgnoringSafeArea(.bottom)  // Allow footer to extend to bottom edge
+        .edgesIgnoringSafeArea(.bottom)
     }
 }
 

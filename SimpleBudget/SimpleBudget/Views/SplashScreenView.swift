@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct SplashScreenView: View {
     @State private var isActive = false
@@ -6,6 +7,7 @@ struct SplashScreenView: View {
     @State private var opacity = 0.5
     @State private var rotation = 0.0
     @State private var showTagline = false
+    @StateObject private var audioManager = AudioManager()
     
     var body: some View {
         ZStack {
@@ -66,6 +68,8 @@ struct SplashScreenView: View {
                         self.size = 1.0
                         self.opacity = 1.0
                         self.rotation = 360
+                        // Play sound when animation starts
+                        audioManager.playCashRegisterSound()
                     }
                     
                     // Show tagline after a short delay
@@ -82,6 +86,9 @@ struct SplashScreenView: View {
                         self.isActive = true
                     }
                 }
+            }
+            .onDisappear {
+                audioManager.stopPlayback()
             }
             
             // Version number at bottom

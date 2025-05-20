@@ -36,19 +36,33 @@ struct FooterView: View {
             }
             .foregroundColor(selectedTab == 1 ? .blue : .gray)
             
+            // Savings Goals
+            Button {
+                selectedTab = 3
+            } label: {
+                VStack(spacing: 4) {
+                    Image(systemName: selectedTab == 2 ? "chart.line.uptrend.xyaxis.fill" : "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 20))
+                    Text("Goals")
+                        .font(.caption2)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .foregroundColor(selectedTab == 2 ? .blue : .gray)
+
             // Settings
             Button {
                 selectedTab = 2
             } label: {
                 VStack(spacing: 4) {
-                    Image(systemName: selectedTab == 2 ? "gear.circle.fill" : "gear.circle")
+                    Image(systemName: selectedTab == 3 ? "gear.circle.fill" : "gear.circle")
                         .font(.system(size: 20))
                     Text("Settings")
                         .font(.caption2)
                 }
                 .frame(maxWidth: .infinity)
             }
-            .foregroundColor(selectedTab == 2 ? .blue : .gray)
+            .foregroundColor(selectedTab == 3 ? .blue : .gray)
         }
         .padding(.vertical, 8)
         .background(Color(UIColor.systemBackground))
