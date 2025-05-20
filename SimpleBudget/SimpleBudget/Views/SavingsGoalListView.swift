@@ -1,4 +1,4 @@
-// SimpleBudget/SimpleBudget/Views/SavingsGoalListView.swift
+
 import SwiftUI
 
 struct SavingsGoalListView: View {
@@ -144,9 +144,9 @@ struct GoalCardView: View {
             }
             ProgressView(value: goal.progressRatio) {
                 HStack {
-                    Text(String(format: "$%.2f", goal.currentAmount))
+                    Text(String(format: "$%.2f", (goal.currentAmount as? NSDecimalNumber)?.doubleValue ?? 0))
                     Text("of")
-                    Text(String(format: "$%.2f", goal.targetAmount))
+                    Text(String(format: "$%.2f", (goal.targetAmount as? NSDecimalNumber)?.doubleValue ?? 0))
                 }
                 .font(.caption)
             }
@@ -196,10 +196,12 @@ struct EmptyStateView: View {
 
 struct GoalRow: View {
     let goal: SavingsGoal
+    @Environment(\.managedObjectContext) private var viewContext
 
     var body: some View {
         NavigationLink {
             SavingsGoalView(goal: goal)
+                .environment(\.managedObjectContext, viewContext)
         } label: {
             GoalCardView(goal: goal)
         }

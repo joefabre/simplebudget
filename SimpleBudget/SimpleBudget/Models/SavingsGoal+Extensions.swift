@@ -1,3 +1,4 @@
+
 // SavingsGoal+Extensions.swift
 
 import Foundation
@@ -7,12 +8,17 @@ extension SavingsGoal {
     // MARK: - Helper Computed Properties
 
     var isComplete: Bool {
-        return currentAmount >= targetAmount
+        guard let currentAmount = currentAmount as? NSDecimalNumber,
+              let targetAmount = targetAmount as? NSDecimalNumber else { return false }
+        return currentAmount.doubleValue >= targetAmount.doubleValue
     }
 
     var progressRatio: Double {
-        guard targetAmount > 0 else { return 0 }
-        return min(currentAmount / targetAmount, 1.0)
+        guard let targetAmount = targetAmount as? NSDecimalNumber,
+              let currentAmount = currentAmount as? NSDecimalNumber,
+              targetAmount.doubleValue != 0 else { return 0 }
+        let ratio = currentAmount.doubleValue / targetAmount.doubleValue
+        return min(ratio, 1.0)
     }
 
     var progressPercentage: Double {
@@ -20,7 +26,9 @@ extension SavingsGoal {
     }
 
     var remainingAmount: Double {
-        return max(0, targetAmount - currentAmount)
+        guard let targetAmount = targetAmount as? NSDecimalNumber,
+              let currentAmount = currentAmount as? NSDecimalNumber else { return 0 }
+        return max(0, targetAmount.doubleValue - currentAmount.doubleValue)
     }
 
     var daysRemaining: Int? {
@@ -44,10 +52,16 @@ extension SavingsGoal {
     }
 
     var requiredMonthlyContribution: Double? {
-        guard let deadline = deadline, !isComplete, deadline > Date() else { return nil }
+        guard let deadline = deadline,
+              !isComplete,
+              deadline > Date(),
+              let targetAmount = targetAmount as? NSDecimalNumber,
+              let currentAmount = currentAmount as? NSDecimalNumber else { return nil }
         let calendar = Calendar.current
-        let components = calendar.dateComponents([.month], from: Date(), to: deadline)
+        let today = Date()
+        let components = calendar.dateComponents([.month], from: today, to: deadline)
         guard let months = components.month, months > 0 else { return nil }
+        let remainingAmount = targetAmount.doubleValue - currentAmount.doubleValue
         return remainingAmount / Double(months)
     }
 

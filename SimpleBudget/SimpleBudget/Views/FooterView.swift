@@ -38,10 +38,10 @@ struct FooterView: View {
             
             // Savings Goals
             Button {
-                selectedTab = 3
+                selectedTab = 2
             } label: {
                 VStack(spacing: 4) {
-                    Image(systemName: selectedTab == 2 ? "chart.line.uptrend.xyaxis.fill" : "chart.line.uptrend.xyaxis")
+                    Image(systemName: "chart.bar.fill")
                         .font(.system(size: 20))
                     Text("Goals")
                         .font(.caption2)
@@ -52,7 +52,7 @@ struct FooterView: View {
 
             // Settings
             Button {
-                selectedTab = 2
+                selectedTab = 3
             } label: {
                 VStack(spacing: 4) {
                     Image(systemName: selectedTab == 3 ? "gear.circle.fill" : "gear.circle")

@@ -17,6 +17,8 @@ struct ContentView: View {
                     TransactionsView()
                         .environment(\.managedObjectContext, viewContext)
                 case 2:
+                    SavingsGoalListView()                        .environment(\.managedObjectContext, viewContext)
+                case 3:
                     SettingsView()
                         .environment(\.managedObjectContext, viewContext)
                 default:
