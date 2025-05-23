@@ -70,6 +70,14 @@ public struct TransactionsView: View {
                         Image(systemName: "plus")
                     }
                 }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        exportTransactions()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
             }
             .sheet(isPresented: $isAddingTransaction) {
                 AddTransactionView()
@@ -139,5 +147,43 @@ public struct TransactionsView: View {
         formatter.dateFormat = "MMMM yyyy"
         return formatter
     }
+    
+    private func generateCSV() -> String {
+        let headers = "Date,Title,Amount,Category,Account,Notes\n"
+        let rows = filteredTransactions.map { transaction in
+            let date = transaction.date?.formatted(date: .numeric, time: .omitted) ?? ""
+            let title = transaction.title ?? ""
+            let amount = String(format: "%.2f", transaction.amount)
+            let category = transaction.category ?? ""
+            let account = transaction.account?.name ?? ""
+            let notes = transaction.notes ?? ""
+            return "\(date),\"\(title)\",\(amount),\"\(category)\",\"\(account)\",\"\(notes)\""
+        }.joined(separator: "\n")
+        return headers + rows
+    }
+    
+    private func exportTransactions() {
+        let csvContent = generateCSV()
+        if let csvData = csvContent.data(using: .utf8) {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let fileName = "transactions_\(dateFormatter.string(from: Date())).csv"
+            
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            
+            do {
+                try csvData.write(to: tempURL)
+                let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+                
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first,
+                   let rootVC = window.rootViewController {
+                    activityVC.popoverPresentationController?.sourceView = rootVC.view
+                    rootVC.present(activityVC, animated: true)
+                }
+            } catch {
+                print("Error exporting transactions: \(error)")
+            }
+        }
+    }
 }
-

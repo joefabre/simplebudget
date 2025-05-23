@@ -81,10 +81,10 @@ struct SavingsGoalListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingAddGoal) {
-            SavingsGoalView()
-                .environment(\.managedObjectContext, viewContext)
-        }
+            .sheet(isPresented: $showingAddGoal) {
+                SavingsGoalView(goal: <#SavingsGoal#>)
+                    .environment(\.managedObjectContext, viewContext)
+            }
         .onChange(of: selectedSort) { _ in
             updateSort()
         }
