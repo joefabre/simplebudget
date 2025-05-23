@@ -1,4 +1,4 @@
-
+import CoreData
 import SwiftUI
 
 struct SavingsGoalListView: View {
@@ -15,22 +15,20 @@ struct SavingsGoalListView: View {
     @State private var showingAddGoal = false
     @State private var showCompletedGoals = true
     @State private var groupByAccount = false
-
-    private var goals: FetchRequest<SavingsGoal>
-    private var goalsList: FetchedResults<SavingsGoal> {
-        goals.wrappedValue
-    }
-
+    @State private var refreshID = UUID()
+    
+    @FetchRequest private var goals: FetchedResults<SavingsGoal>
+    
     init() {
-        goals = FetchRequest(
+        _goals = FetchRequest<SavingsGoal>(
             sortDescriptors: [NSSortDescriptor(keyPath: \SavingsGoal.createdAt, ascending: false)],
-            predicate: nil,
-            animation: .default)
+            animation: .default
+        )
     }
 
     var body: some View {
         Group {
-            if goalsList.isEmpty {
+            if goals.isEmpty {
                 EmptyStateView()
             } else {
                 List {
@@ -38,31 +36,31 @@ struct SavingsGoalListView: View {
                         Toggle("Show Completed Goals", isOn: $showCompletedGoals)
                         Toggle("Group by Account", isOn: $groupByAccount)
                     }
+                    
                     if groupByAccount {
-                        ForEach(groupedGoals.keys.sorted(), id: \.self) { accountName in
-                            Section(header: Text(accountName)) {
-                                ForEach(groupedGoals[accountName] ?? []) { goal in
-                                    GoalRow(goal: goal)
-                                        .environment(\.managedObjectContext, viewContext)
-                                }
-                                .onDelete { indexSet in
-                                    deleteGoals(from: groupedGoals[accountName] ?? [], at: indexSet)
-                                }
-                            }
-                        }
+                        GroupedGoalsSection(
+                            groupedGoals: groupedGoals,
+                            viewContext: viewContext,
+                            deleteGoals: deleteGoals(from:at:)
+                        )
                     } else {
-                        Section {
-                            ForEach(filteredGoals) { goal in
-                                GoalRow(goal: goal)
-                                    .environment(\.managedObjectContext, viewContext)
-                            }
-                            .onDelete(perform: deleteGoals)
-                        }
+                        NonGroupedGoalsSection(
+                            goals: filteredGoals,
+                            viewContext: viewContext,
+                            deleteGoals: deleteGoals(offsets:)
+                        )
                     }
                 }
             }
         }
+        .id(refreshID)
         .navigationTitle("Savings Goals")
+        .refreshable {
+            refreshView()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshSavingsGoals"))) { _ in
+            refreshView()
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
@@ -88,14 +86,12 @@ struct SavingsGoalListView: View {
                 .environment(\.managedObjectContext, viewContext)
         }
         .onChange(of: selectedSort) { _ in
-            // To update sort, you must recreate the FetchRequest.
-            // This is a limitation of FetchRequest in SwiftUI.
-            // For a dynamic fetch, consider using @FetchRequest in a child view or use a ViewModel.
+            updateSort()
         }
     }
 
     private var filteredGoals: [SavingsGoal] {
-        goalsList.filter { goal in
+        goals.filter { goal in
             showCompletedGoals ? true : !goal.isComplete
         }
     }
@@ -119,10 +115,37 @@ struct SavingsGoalListView: View {
             try? viewContext.save()
         }
     }
+    
+    private func updateSort() {
+        withAnimation {
+            goals.nsSortDescriptors = [
+                selectedSort == .dateCreated ? NSSortDescriptor(keyPath: \SavingsGoal.createdAt, ascending: false) :
+                selectedSort == .progress ? NSSortDescriptor(keyPath: \SavingsGoal.currentAmount, ascending: false) :
+                selectedSort == .deadline ? NSSortDescriptor(keyPath: \SavingsGoal.deadline, ascending: true) :
+                NSSortDescriptor(keyPath: \SavingsGoal.targetAmount, ascending: true)
+            ]
+            refreshID = UUID()
+        }
+    }
+    
+    private func refreshView() {
+        // Refresh the view context first
+        try? viewContext.refreshAllObjects()
+        // Then trigger view update
+        withAnimation {
+            refreshID = UUID()
+        }
+    }
 }
 
 struct GoalCardView: View {
     let goal: SavingsGoal
+    @Environment(\.managedObjectContext) private var viewContext
+
+    private var progressRatio: Double {
+        let targetDouble = (goal.targetAmount as? Decimal).map { NSDecimalNumber(decimal: $0).doubleValue } ?? 0
+        return targetDouble > 0 ? goal.currentAmount / targetDouble : 0
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -142,11 +165,11 @@ struct GoalCardView: View {
                     }
                 }
             }
-            ProgressView(value: goal.progressRatio) {
+            ProgressView(value: progressRatio) {
                 HStack {
-                    Text(String(format: "$%.2f", (goal.currentAmount as? NSDecimalNumber)?.doubleValue ?? 0))
+                    Text(String(format: "$%.2f", goal.currentAmount))
                     Text("of")
-                    Text(String(format: "$%.2f", (goal.targetAmount as? NSDecimalNumber)?.doubleValue ?? 0))
+                    Text(String(format: "$%.2f", (goal.targetAmount as? Decimal).map { NSDecimalNumber(decimal: $0).doubleValue } ?? 0))
                 }
                 .font(.caption)
             }
@@ -210,6 +233,42 @@ struct GoalRow: View {
             goal.isPastDeadline ? Color(.systemPink).opacity(0.1) :
             Color(.systemBackground)
         )
+    }
+}
+
+private struct GroupedGoalsSection: View {
+    let groupedGoals: [String: [SavingsGoal]]
+    let viewContext: NSManagedObjectContext
+    let deleteGoals: ([SavingsGoal], IndexSet) -> Void
+    
+    var body: some View {
+        ForEach(groupedGoals.keys.sorted(), id: \.self) { accountName in
+            Section(header: Text(accountName)) {
+                ForEach(groupedGoals[accountName] ?? []) { goal in
+                    GoalRow(goal: goal)
+                        .environment(\.managedObjectContext, viewContext)
+                }
+                .onDelete { indexSet in
+                    deleteGoals(groupedGoals[accountName] ?? [], indexSet)
+                }
+            }
+        }
+    }
+}
+
+private struct NonGroupedGoalsSection: View {
+    let goals: [SavingsGoal]
+    let viewContext: NSManagedObjectContext
+    let deleteGoals: (IndexSet) -> Void
+    
+    var body: some View {
+        Section {
+            ForEach(goals) { goal in
+                GoalRow(goal: goal)
+                    .environment(\.managedObjectContext, viewContext)
+            }
+            .onDelete(perform: deleteGoals)
+        }
     }
 }
 
