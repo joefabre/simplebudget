@@ -11,19 +11,30 @@ struct ContentView: View {
             Group {
                 switch selectedTab {
                 case 0:
-                    DashboardView()
-                        .environment(\.managedObjectContext, viewContext)
+                    NavigationStack {
+                        DashboardView()
+                            .environment(\.managedObjectContext, viewContext)
+                    }
                 case 1:
-                    TransactionsView()
-                        .environment(\.managedObjectContext, viewContext)
+                    NavigationStack {
+                        TransactionsView()
+                            .environment(\.managedObjectContext, viewContext)
+                    }
                 case 2:
-                    SavingsGoalListView()                        .environment(\.managedObjectContext, viewContext)
+                    NavigationStack {
+                        SavingsGoalListView()
+                            .environment(\.managedObjectContext, viewContext)
+                    }
                 case 3:
-                    SettingsView()
-                        .environment(\.managedObjectContext, viewContext)
+                    NavigationStack {
+                        SettingsView()
+                            .environment(\.managedObjectContext, viewContext)
+                    }
                 default:
-                    DashboardView()
-                        .environment(\.managedObjectContext, viewContext)
+                    NavigationStack {
+                        DashboardView()
+                            .environment(\.managedObjectContext, viewContext)
+                    }
                 }
             }
             .padding(.bottom, FooterView.height)

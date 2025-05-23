@@ -47,7 +47,7 @@ struct SimpleBudgetApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                HomeView()
+                ContentView()
                     .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 
                 if showSplash {
